@@ -2896,23 +2896,38 @@
         <button class='pictos settings-button' data-i18n-title='hit_points_settings' name='act_toggle_hitpoints' title='hit points settings' type='action'>
             y
         </button>
-        <div class='circle'>
             <label data-i18n-title='hit_points_max' title='hit points max'>
-                <span class='redstroke' data-i18n='max' title='max'>max</span>
+                <span class='sublabel darkred' data-i18n='maxhp' title='maxhp'>maxhp</span>
                 <span name='attr_hit_points_max' title='@{hit_points_max}'></span>
             </label>
-        </div>
         <label data-i18n-title='hit_points_current' title='hit points current'>
-            <span class='sublabel darkred' data-i18n='current'>current</span>
+            <span class='sublabel darkred' data-i18n='curhp'>curhp</span>
             <input data-i18n-placeholder='0' name='attr_hit_points' placeholder='0' spellcheck='false' title='@{hit_points}' type='text' value='' />
-        </label>
-        <label data-i18n-title='hit_points_temporary' title='hit points temporary'>
-            <span class='sublabel darkred' data-i18n='temporary'>temporary</span>
-            <input data-i18n-placeholder='0' name='attr_hit_points_temporary' placeholder='0' spellcheck='false' title='@{hit_points_temporary}' type='text' value='' />
         </label>
         <label data-i18n-title='hit_points_dying' title='hit points dying'>
             <span class='sublabel darkred' data-i18n='dying'>dying</span>
             <input data-i18n-placeholder='0' name='attr_hit_points_dying' placeholder='0' spellcheck='false' title='@{hit_points_dying}' type='text' value='' />
+        </label>
+
+        <label data-i18n-title='sta_points_max' title='sta points max'>
+                <span class='sublabel darkred' data-i18n='maxsp' title='maxsp'>maxsp</span>
+                <span name='attr_sta_points_max' title='@{sta_points_max}'></span>
+            </label>
+        <label data-i18n-title='sta_points_current' title='sta points current'>
+            <span class='sublabel darkred' data-i18n='cursp'>cursp</span>
+            <input data-i18n-placeholder='0' name='attr_sta_points' placeholder='0' spellcheck='false' title='@{sta_points}' type='text' value='' />
+        </label>
+        <label data-i18n-title='hit_points_temporary' title='hit points temporary'>
+            <span class='sublabel darkred' data-i18n='tmphp'>tmphp</span>
+            <input data-i18n-placeholder='0' name='attr_hit_points_temporary' placeholder='0' spellcheck='false' title='@{hit_points_temporary}' type='text' value='' />
+        </label>
+        <label data-i18n-title='resolve_points_max' title='resolve points max'>
+            <span class='sublabel darkred' data-i18n='maxrp'>maxrp</span>
+            <span name='attr_resolve_points_max' title='@{resolve_points_max}'></span>
+        </label>
+        <label data-i18n-title='resolve_points_current' title='resolve points current'>
+            <span class='sublabel darkred' data-i18n='currp'>currp</span>
+            <input data-i18n-placeholder='0' name='attr_resolve_points' placeholder='0' spellcheck='false' title='@{resolve_points}' type='text' value='' />
         </label>
         <label data-i18n-title='hit_points_wounded' title='hit points wounded'>
             <span class='sublabel darkred' data-i18n='wounded'>wounded</span>
@@ -4860,6 +4875,10 @@
 <!-- Hit Points -->
 <input name="attr_hit_points" type="hidden" value="0" />
 <input name="attr_hit_points_max" type="hidden" value="0" />
+<input name="attr_sta_points" type="hidden" value="0" />
+<input name="attr_sta_points_max" type="hidden" value="0" />
+<input name="attr_resolve_points" type="hidden" value="0" />
+<input name="attr_resolve_points_max" type="hidden" value="0" />
 
 <!-- Perception -->
 <input name="attr_perception" type="hidden" value="0" />
@@ -6081,12 +6100,15 @@ var modPf2 = (function () {
         if((values["sheet_type"] || "").toLowerCase() != "npc") {
             update["hit_points_max"] = (parseInt(values[`hit_points_ancestry`]) || 0)
                 + ((
-                    (parseInt(values[`hit_points_class`]) || 0)
-                    +
-                    (parseInt(values[`constitution_modifier`]) || 0)
+                    parseInt((parseInt(values[`hit_points_class`]) / 2) || 0)
                 ) * (parseInt(values[`level`]) || 1))
                 + (parseInt(values[`hit_points_other`]) || 0)
                 + (parseInt(values[`hit_points_item`]) || 0);
+            update["sta_points_max"] = ((
+                    parseInt((parseInt(values[`hit_points_class`]) / 2) || 0)
+                    +
+                    (parseInt(values[`constitution_modifier`]) || 0)
+                ) * (parseInt(values[`level`]) || 1));
         }
         return update;
     };
@@ -6258,6 +6280,7 @@ var modPf2 = (function () {
                 + (parseInt(update["class_dc_proficiency"]) || 0)
                 + (parseInt(values["class_dc_item"]) || 0)
                 + (parseInt(values["class_dc_temporary"]) || 0);
+            update["resolve_points_max"] = update["class_dc_key_ability"];
         }
         return update;
     };
