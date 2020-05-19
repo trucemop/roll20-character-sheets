@@ -2933,6 +2933,10 @@
             <span class='sublabel darkred' data-i18n='wounded'>wounded</span>
             <input data-i18n-placeholder='0' name='attr_hit_points_wounded' placeholder='0' spellcheck='false' title='@{hit_points_wounded}' type='text' value='' />
         </label>
+        <label class='sublabel' data-i18n-title='total_hit_points' title='total hit points'>
+                <span class='sublabel darkred' data-i18n='max' title='max'>max</span>
+                <span name='attr_total_hit_points' title='@{total_hit_points}'></span>
+            </label>
     </div>
     <div class='grid settings'>
         <label class='sublabel' data-i18n-title='hit_points_ancestry' title='hit points from ancestry'>
@@ -4879,6 +4883,8 @@
 <input name="attr_sta_points_max" type="hidden" value="0" />
 <input name="attr_resolve_points" type="hidden" value="0" />
 <input name="attr_resolve_points_max" type="hidden" value="0" />
+<input name="attr_total_hit_points" type="hidden" value="0" />
+<input name="attr_total_hit_points_last" type="hidden" value="0" />
 
 <!-- Perception -->
 <input name="attr_perception" type="hidden" value="0" />
@@ -5173,6 +5179,7 @@ var modPf2 = (function () {
         , "ac": ["armor_class"]
         , "ac_fields": ["ability","ability_select","dc_rank","proficiency","item","temporary","dc_base","cap","shield_ac_bonus","shield_temporary"]
         , "hit_points": ["hit_points_ancestry","hit_points_class","hit_points_other","hit_points_item"]
+        , "total_hit_points": ["total_hit_points","sta_points","hit_points","hit_points_temporary","total_hit_points_last"]
         , "repeating_attacks": ["melee-strikes","ranged-strikes"]
         , "attacks_fields": ["weapon","weapon_ability_select","weapon_ability","weapon_proficiency","weapon_rank","weapon_item","weapon_temporary","weapon_traits","damage_dice","damage_dice_size","damage_ability_select","damage_ability","damage_b","damage_p","damage_s","damage_weapon_specialization","damage_temporary","damage_other","damage_effects","damage_additional"]
         , "perception": ["perception_ability_select","perception_ability","perception_rank","perception_proficiency","perception_item","perception_temporary"]
@@ -6112,6 +6119,79 @@ var modPf2 = (function () {
         }
         return update;
     };
+
+    // === TOTAL HIT POINTS (HP)
+    const updateTotalHitPoints = function(attr, callback) {
+        console.log(`%c Update HP ${attr}`, "color:purple;font-size:14px;");
+        let fields = ["sheet_type","level"];
+        fields.push(...global_attributes_by_category["ability_modifiers"],...global_attributes_by_category["total_hit_points"]);
+        getAttrs(fields, (values) => {
+            setAttrs(calcTotalHitPoints(values), {silent: true}, () => {
+                if(callback) {
+                    callback();
+                }
+            });
+        });
+    };
+    const calcTotalHitPoints = function(values) {
+        let update = {};
+        if((values["sheet_type"] || "").toLowerCase() != "npc") {
+            let varTotal = parseInt(values["total_hit_points"]);
+            let lastTotal = parseInt(values["total_hit_points_last"]);
+            let hp = (parseInt(values["hit_points"]) || 0);
+            let sp = (parseInt(values["sta_points"]) || 0);
+            let tp = (parseInt(values["hit_points_temporary"]) || 0);
+            let calcTotal = hp + sp + tp;
+            let diff = calcTotal - varTotal;
+            if(varTotal == lastTotal || varTotal > calcTotal) {
+                update["total_hit_points"] = calcTotal;
+                update["total_hit_points_last"] = calcTotal;
+            } else {//if (varTotal < calcTotal) {
+                let tpdiff = tp - diff;
+                if(tpdiff >= 0) {
+                    tp = update["hit_points_temporary"] = tpdiff;
+                } else {
+                    tp = update["hit_points_temporary"] = 0;
+                    let spdiff = sp + tpdiff;
+                    if(spdiff >= 0) {
+                        sp = update["sta_points"] = spdiff;
+                    } else {
+                        sp = update["sta_points"] = 0;
+                        hp = update["hit_points"] = hp + spdiff;
+                    }
+                }
+                update["total_hit_points"] = hp + sp + tp;
+                update["total_hit_points_last"] = hp + sp + tp;
+            }
+            
+        }
+        return update;
+    };
+
+    // === TOTAL HIT POINTS SUM (HP)
+    const updateTotalHitPointsSum = function(attr, callback) {
+        console.log(`%c Update HP ${attr}`, "color:purple;font-size:14px;");
+        let fields = ["sheet_type","level"];
+        fields.push(...global_attributes_by_category["ability_modifiers"],...global_attributes_by_category["total_hit_points_sum"]);
+        getAttrs(fields, (values) => {
+            setAttrs(calcTotalHitPointsSum(values), {silent: true}, () => {
+                if(callback) {
+                    callback();
+                }
+            });
+        });
+    };
+    const calcTotalHitPointsSum = function(values) {
+        let update = {};
+        if((values["sheet_type"] || "").toLowerCase() != "npc") {
+            let hp = (parseInt(values["hit_points"]) || 0);
+            let sp = (parseInt(values["sta_points"]) || 0);
+            let tp = (parseInt(values["hit_points_temporary"]) || 0);
+            update["total_hit_points"] = hp + sp + tp;
+        }
+        return update;
+    };
+
 
     // === ATTACKS
     const updateAttack = function(id, attr, callback) {
@@ -7179,6 +7259,7 @@ var modPf2 = (function () {
         , updateSave: updateSave
         , updateArmorClass: updateArmorClass
         , updateHitPoints: updateHitPoints
+        , updateTotalHitPoints: updateTotalHitPoints
         , updateAttack: updateAttack
         , updatePerception: updatePerception
         , updateClassDc: updateClassDc
@@ -7390,6 +7471,13 @@ on(modPf2.getAttrNames(["hit_points"]).map(attr => `change:${attr}`).join(' '), 
     // console.table(eventinfo);
     modPf2.updateHitPoints(eventinfo.sourceAttribute);
 });
+
+// === TOTAL HIT POINTS
+on(modPf2.getAttrNames(["total_hit_points"]).map(attr => `change:${attr}`).join(' '), (eventinfo) => {
+    // console.table(eventinfo);
+    modPf2.updateTotalHitPoints(eventinfo.sourceAttribute);
+});
+
 
 // === ATTACKS
 modPf2.getAttrNames(["repeating_attacks"]).forEach(attr => {
